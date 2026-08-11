@@ -1,0 +1,31 @@
+{
+	"name": "@winnow/cli",
+	"version": "0.0.1",
+	"description": "",
+	"main": "index.js",
+	"bin": {
+		"winnow": "./dist/cli.js"
+	},
+	"scripts": {
+		"dev": "tsx src/cli.ts",
+		"build": "tsc",
+		"test": "vitest run --passWithNoTests"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "Apache-2.0",
+	"devEngines": {
+		"packageManager": {
+			"name": "pnpm",
+			"version": "^11.21.0",
+			"onFail": "download"
+		}
+	},
+	"type": "module",
+	"devDependencies": {
+		"@types/node": "^26.2.0",
+		"tsx": "^4.23.12",
+		"typescript": "^7.0.2",
+		"vitest": "^4.1.10"
+	}
+}
