@@ -312,6 +312,11 @@ crescono in modo additivo, ma non diventano mai una riga magica.
    il messaggio deve dirlo invece di fallire in modo strano.
 6. Sempre in `checks`, esegui ESLint una volta col formatter SARIF e carica il file come artefatto. Questo
    job ha soltanto `contents: read`; non riceve un token GitHub capace di commentare o pubblicare alert.
+   ⚠️ **Invoca ESLint tu, non lo script `lint` del repository.** Sui cinque fixture registrati lo stesso
+   lavoro ha quattro forme diverse: `eslint .`, `eslint . && prettier -c …`, `test:lint` invece di `lint`, e
+   `biome check`. Eseguire `pnpm lint` significa a seconda dei casi raccogliere output di prettier, non
+   trovare lo script, o lintare con lo strumento sbagliato. winnow esegue
+   `eslint . -f @microsoft/eslint-formatter-sarif -o eslint.sarif`.
 7. **Il job `publish`**, con `needs: [resolve, checks]` e condizione `same_repository`: scarica il SARIF,
    installa soltanto il binario reviewdog con
    `reviewdog/action-setup`, lo passa a `reviewdog -f=sarif -reporter=github-pr-review`, poi carica lo stesso

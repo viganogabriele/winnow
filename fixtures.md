@@ -21,19 +21,32 @@ Per `ROADMAP.md` §3, five are needed:
 
 ## Registered
 
-| # | Repository | Package manager | Linter | Browser | Good for | Missing |
+| # | Repository | Package manager | Linter | Browser | Good for | Watch out for |
 |---|---|---|---|---|---|---|
-| 1 | [`viganogabriele/viganogabriele.com`](https://github.com/viganogabriele/viganogabriele.com) | **npm** (`package-lock.json`) | **ESLint** (`eslint .`) | **Playwright** (`playwright test`) | **Fase 1** (the only one of the two with ESLint), Fase 2 (`tsc -b`), Fase 3 (has real Playwright specs) | no `compose.yml`; default branch is `master`, not `main` |
-| 3 | [`PoliNetworkOrg/web`](https://github.com/PoliNetworkOrg/web) | **pnpm** (enforced by `preinstall: only-allow pnpm`) | **Biome**, not ESLint | — | Fase 2 (`typecheck: tsc --noEmit`), Fase 3 (has a `Dockerfile`) | **no ESLint**, so it cannot verify Fase 1; no Playwright; no `compose.yml` |
+| 1 | [`viganogabriele/viganogabriele.com`](https://github.com/viganogabriele/viganogabriele.com) | **npm** (`package-lock.json`) | ESLint (`eslint .`) | Playwright | Fase 1, Fase 2 (`tsc -b`), Fase 3 (real specs) | npm, not pnpm; default branch is **`master`** |
+| 2 | [`viganogabriele/winnow-fixture-broken`](https://github.com/viganogabriele/winnow-fixture-broken) — **written for this purpose**, [PR #1](https://github.com/viganogabriele/winnow-fixture-broken/pull/1) | pnpm | ESLint | Playwright, 2 viewports | **Everything**: `main` green, PR #1 plants one defect of each class. Has `.winnow/app.yml` ready | zero runtime dependencies, so it is *easier* than reality — do not tune only against it |
+| 3 | [`unjs/ofetch`](https://github.com/unjs/ofetch) | pnpm@10.20.0 | ESLint | — | Fase 1 and 2 on somebody else's code. Small (1.6 MB), MIT, actively maintained | `lint` is `eslint . && prettier -c …` — **not just ESLint** |
+| 4 | [`pmndrs/zustand`](https://github.com/pmndrs/zustand) | pnpm@11 | ESLint | — | Fase 1 and 2 at a larger size (8 MB), MIT, active | there is **no `lint` script** — it is `test:lint` |
+| 5 | [`PoliNetworkOrg/web`](https://github.com/PoliNetworkOrg/web) | pnpm (enforced by `preinstall: only-allow pnpm`) | **Biome**, not ESLint | — | Fase 2 (`typecheck: tsc --noEmit`), Fase 3 (has a `Dockerfile`) | **no ESLint at all**, so it cannot verify Fase 1 |
 
-Still needed: **#2** (deliberately broken, written by you), a second repository **not written by you** for the
-#3–4 slot, and **#5** (hostile, Fase 4).
+Still needed: the **hostile fixture** for Fase 4 — a repository that *tries* to read and exfiltrate the
+credential and must visibly fail. Write it when you build the perimeter, not before: it is only meaningful
+once you know exactly what it is attacking.
+
+**#3 and #4 have to be forked.** You cannot add a caller workflow to a repository you do not own, so those two
+live as forks under your account. Note the consequence for invariant 9: a pull request inside *your* fork is
+same-repository and therefore gets secrets, which is what you want for ordinary testing — but it means testing
+the **fork gate** needs a pull request from a genuinely different account's fork.
 
 ### What these two taught us before a line of code was written
 
 - **Fase 1's declared limit was too narrow.** It said "Node/TypeScript with pnpm", but the only repository
-  here with ESLint uses **npm**, and the only one with pnpm uses **Biome**. The phase now supports both
-  package managers, chosen by reading which lockfile exists — see the note in `ROADMAP.md` Fase 1.
+  here with ESLint uses **npm**, and the one with pnpm uses **Biome**. The phase now supports both package
+  managers, chosen by reading which lockfile exists — see the note in `ROADMAP.md` Fase 1.
+- **winnow must not run the repository's own lint script.** Across five repositories the same job has four
+  different shapes: `eslint .` (#1), `eslint . && prettier -c …` (#3), `test:lint` rather than `lint` (#4),
+  and `biome check` (#5). Running `pnpm lint` would variously pick up prettier output, fail to find the
+  script, or lint with the wrong tool. winnow invokes ESLint itself with the SARIF formatter.
 - **Biome is an open question for Fase 2, not Fase 1.** To lint `PoliNetworkOrg/web` at all, Biome's output
   needs a route to SARIF: either a native reporter (check the current Biome docs — do not assume) or a
   converter of ours. Until then that repository contributes `tsc`, not lint.
