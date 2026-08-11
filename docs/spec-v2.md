@@ -1,5 +1,23 @@
 # winnow — Revised Foundation (v2)
 
+> ## ⚠️ Read this first: architecture superseded, product reasoning still stands
+>
+> This document remains the reference for **why** winnow makes the product choices it makes: evidence
+> before speculation (§4.2), diff instead of dump (§4.1), evidence tiers (§9.4), deterministic stages
+> gating the AI stage (§8), subscription auth as the default (§12), the failing-test precondition on
+> fix mode (§14), and the credential separation of §12.3.
+>
+> It is **no longer the source of truth for architecture.** Wherever it describes a worker, a
+> Postgres-backed queue, a Podman sandbox, semantic fingerprints (§9.3), or an OCI plugin contract (§19),
+> it is superseded: those are provided by GitHub Actions, `reviewdog` and GitHub code scanning instead of
+> being built. The **aggregator** is the one exception that survives in reduced form — not the subsystem
+> described here, but a small composite action (`aggregate`) that merges SARIF and assigns severity and
+> evidence tier, because §9.2's rule that a model never grades itself still needs an owner. See
+> `docs/decisions/0008-github-actions-as-the-engine.md` for the decision and its honest costs.
+>
+> **→ The plan of record is `ROADMAP.md`.** Cite this spec for product reasoning, not for
+> implementation instructions.
+
 > **Status:** revised concept specification. Supersedes v1.
 > **Change of intent vs v1:** v1 described a *product surface*. v2 describes a *buildable system*, with an explicit list of things not to build.
 > **Name:** winnow (renamed from the working name "QAForge" used while drafting this document).

@@ -1,19 +1,16 @@
 {
-	"name": "@winnow/cli",
+	"name": "winnow",
+	"private": true,
 	"version": "0.0.1",
-	"description": "",
-	"main": "index.js",
-	"bin": {
-		"winnow": "./dist/cli.js"
+	"description": "The QA control plane GitHub doesn't give you: a reusable Actions workflow plus a self-hosted dashboard, assembled from open source tools.",
+	"license": "Apache-2.0",
+	"type": "module",
+	"engines": {
+		"node": ">=22"
 	},
 	"scripts": {
-		"dev": "tsx src/cli.ts",
-		"build": "tsc",
 		"test": "vitest run --passWithNoTests"
 	},
-	"keywords": [],
-	"author": "",
-	"license": "Apache-2.0",
 	"devEngines": {
 		"packageManager": {
 			"name": "pnpm",
@@ -21,9 +18,8 @@
 			"onFail": "download"
 		}
 	},
-	"type": "module",
 	"devDependencies": {
-		"@types/node": "^26.2.0",
+		"@types/node": "^22.0.0",
 		"tsx": "^4.23.12",
 		"typescript": "^7.0.2",
 		"vitest": "^4.1.10"

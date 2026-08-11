@@ -1,5 +1,10 @@
 # 0002 — TypeScript/Node instead of Go for the binary and worker
 
+> **Update 2026-08-11 — this decision now stands unconditionally.** `0008` removed the worker, the
+> queue and the container sandbox, which were the only things Go had an advantage for. The trade-off
+> described below no longer exists, the three guardrails are moot (there is no `src/sandbox/`), and the
+> re-evaluation trigger is void. TypeScript, with React for the dashboard. Do not reopen.
+
 **Question:** spec §5.4 chooses Go for the `winnow` binary and worker (TypeScript/React only for the
 dashboard). Do we follow that, or build the whole project in TypeScript on Node?
 
@@ -31,5 +36,7 @@ Friction with Dagger/gVisor, if it arrives, arrives in Part E.
 
 **Date:** 2026-08-11
 
-**Re-evaluate when:** any one of — Part E (server) begins; Dagger becomes genuinely necessary (D4);
-or CLI distribution/startup time is flagged as a problem by a real user (not hypothesized).
+**Re-evaluate when:** ~~any one of — Part E (server) begins; Dagger becomes genuinely necessary (D4);
+or CLI distribution/startup time is flagged as a problem by a real user (not hypothesized).~~
+**Void** — see the update at the top of this file. None of those triggers can fire: `0008` removed the
+server, Dagger, and the CLI. This decision has no re-evaluation trigger left.
