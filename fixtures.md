@@ -10,7 +10,8 @@ ESLint configuration, and either package manager — the registered one uses **n
 grow with the roadmap — but nothing in Fase 1 can be verified without it, because the workflow runs on
 GitHub and needs a real pull request on a real repository.
 
-Per `ROADMAP.md` §3, five are needed:
+Per `ROADMAP.md` §3, five roles are required. PoliNetwork is an additional fixture, so the complete
+registered set will contain six repositories once the hostile fixture exists:
 
 | # | What | Needed from |
 |---|---|---|
@@ -24,10 +25,10 @@ Per `ROADMAP.md` §3, five are needed:
 | # | Repository | Package manager | Linter | Browser | Good for | Watch out for |
 |---|---|---|---|---|---|---|
 | 1 | [`viganogabriele/viganogabriele.com`](https://github.com/viganogabriele/viganogabriele.com) | **npm** (`package-lock.json`) | ESLint (`eslint .`) | Playwright | Fase 1, Fase 2 (`tsc -b`), Fase 3 (real specs) | npm, not pnpm; default branch is **`master`** |
-| 2 | [`viganogabriele/winnow-fixture-broken`](https://github.com/viganogabriele/winnow-fixture-broken) — **written for this purpose**, [PR #1](https://github.com/viganogabriele/winnow-fixture-broken/pull/1) | pnpm | ESLint | Playwright, 2 viewports | **Everything**: `main` green, PR #1 plants one defect of each class. Has `.winnow/app.yml` ready | zero runtime dependencies, so it is *easier* than reality — do not tune only against it |
+| 2 | [`viganogabriele/winnow-fixture-broken`](https://github.com/viganogabriele/winnow-fixture-broken) — **written for this purpose**, [PR #1](https://github.com/viganogabriele/winnow-fixture-broken/pull/1) | pnpm@11.21.0 | ESLint | Playwright, 2 viewports | **Everything**: `main` green, PR #1 plants one defect of each class. Has `.winnow/app.yml` ready | zero runtime dependencies, so it is *easier* than reality — do not tune only against it |
 | 3 | [`unjs/ofetch`](https://github.com/unjs/ofetch) | pnpm@10.20.0 | ESLint | — | Fase 1 and 2 on somebody else's code. Small (1.6 MB), MIT, actively maintained | `lint` is `eslint . && prettier -c …` — **not just ESLint** |
-| 4 | [`pmndrs/zustand`](https://github.com/pmndrs/zustand) | pnpm@11 | ESLint | — | Fase 1 and 2 at a larger size (8 MB), MIT, active | there is **no `lint` script** — it is `test:lint` |
-| 5 | [`PoliNetworkOrg/web`](https://github.com/PoliNetworkOrg/web) | pnpm (enforced by `preinstall: only-allow pnpm`) | **Biome**, not ESLint | — | Fase 2 (`typecheck: tsc --noEmit`), Fase 3 (has a `Dockerfile`) | **no ESLint at all**, so it cannot verify Fase 1 |
+| 4 | [`pmndrs/zustand`](https://github.com/pmndrs/zustand) | pnpm@11.3.0 | ESLint | — | Fase 1 and 2 at a larger size (8 MB), MIT, active | there is **no `lint` script** — it is `test:lint` |
+| extra | [`PoliNetworkOrg/web`](https://github.com/PoliNetworkOrg/web) | pnpm@10.33.0 (also enforced by `preinstall: only-allow pnpm`) | **Biome**, not ESLint | — | Fase 2 (`typecheck: tsc --noEmit`), Fase 3 (has a `Dockerfile`) | **no ESLint at all**, so it cannot verify Fase 1 |
 
 Still needed: the **hostile fixture** for Fase 4 — a repository that *tries* to read and exfiltrate the
 credential and must visibly fail. Write it when you build the perimeter, not before: it is only meaningful

@@ -234,9 +234,10 @@ Niente altro senza una decisione scritta.
 
 winnow analizza altri progetti: senza materiale di prova non verifichi nulla. Devono essere
 **repository GitHub veri con PR vere**, perché il workflow gira su Actions. Dettagli in
-`fixtures.md` (dove due sono **già registrati**); ne servono cinque in tutto, ma **per iniziare la Fase 1 te
-ne serve uno solo, e solo in parte**: un repository tuo, pubblico, con Node e un ESLint configurato che
-funziona — npm o pnpm, indifferente. L'app web e il
+`fixtures.md` (dove cinque sono **già registrati**, ma manca ancora il fixture ostile). Le cinque categorie
+minime restano quelle elencate lì; PoliNetwork è un fixture extra, quindi il set completo ne avrà sei. Per
+iniziare la Fase 1 te ne serve uno solo, e solo in parte: un repository tuo, pubblico, con Node e un ESLint
+configurato che funziona — npm o pnpm, indifferente. L'app web e il
 `compose.yml` non servono prima della Fase 3, quindi il fixture cresce con la roadmap. Senza di lui però la
 Fase 1 non è verificabile: il workflow gira su GitHub e ha bisogno di una PR vera su un repository vero.
 
@@ -296,9 +297,9 @@ crescono in modo additivo, ma non diventano mai una riga magica.
 1. **A mano, prima di scrivere il workflow:** sul repository cavia, esegui ESLint in locale con il
    formatter SARIF e guarda il file che produce. Aprilo. Capisci com'è fatto. **Questo passaggio non
    si salta** — SARIF è il formato che attraversa tutto il progetto.
-2. Il workflow qui, con `on: workflow_call` **e** i suoi input. Dichiarane **quattro** già ora — numero PR,
-   profilo, provider, modello — anche se gli ultimi due restano inutilizzati fino alla Fase 7: aggiungere un
-   input dopo è additivo e innocuo, ma un caller scritto oggi e da riscrivere alla Fase 7 no.
+2. Il workflow qui, con `on: workflow_call` e il solo input il cui significato è già definito: il **numero
+   della PR**. Profilo, provider e modello vengono aggiunti come input opzionali nella fase che ne definisce
+   valori e default. Aggiungere un input opzionale è compatibile; pubblicarne uno indefinito non lo è (`0014`).
 3. Il caller nel repository cavia, con `on: pull_request` **e** `on: workflow_dispatch` — il secondo serve
    già alla Fase 5, e la Fase 11 ci monta solo l'interfaccia sopra. Gli input sono una superficie di
    compatibilità dal primo giorno: rinominarne uno rompe tutti i caller, quindi pochi e additivi.
@@ -307,10 +308,11 @@ crescono in modo additivo, ma non diventano mai una riga magica.
    repository. Espone un booleano `same_repository`, che nessun input del caller può sovrascrivere.
 5. **Il job `checks`: setup di Node, poi `install`.** Senza dipendenze non c'è ESLint da eseguire.
    Il limite di v1 è **Node/TypeScript con ESLint**, e il gestore di pacchetti è **npm o pnpm, scelto
-   leggendo quale lockfile esiste** (`pnpm-lock.yaml` → `pnpm install --frozen-lockfile`;
-   `package-lock.json` → `npm ci`). Tre righe, e non contraddicono `0012`: quella decisione vieta di
-   **indovinare cose ambigue** (porta, health, seed); quale lockfile è presente non è ambiguo, è un file che
-   c'è o non c'è.
+   leggendo quale lockfile esiste**. `package-lock.json` usa `npm ci`. `pnpm-lock.yaml` richiede in
+   `package.json` un `packageManager: "pnpm@<versione esatta>"`: su Node 22 il workflow abilita Corepack e
+   poi esegue `pnpm install --frozen-lockfile`, così è il repository a scegliere la versione che interpreta
+   il suo lockfile (`0027`). Se esistono entrambi i lockfile, oppure manca la versione pnpm esatta, winnow
+   fallisce indicando la causa e l'azione da fare: non indovina quale stato sia quello autorevole (`0012`).
    ⚠️ **Questo limite è già stato corretto una volta grazie ai fixture, prima di scrivere codice:** diceva
    "pnpm", ma dei due repository registrati in `fixtures.md` quello con ESLint usa **npm** e quello con pnpm
    usa **Biome**. Un repository con un altro linguaggio, o con un linter diverso, non è supportato adesso — e
@@ -389,12 +391,13 @@ crescono in modo additivo, ma non diventano mai una riga magica.
 **Come verifichiamo.** Cinque prove, e le ultime tre collaudano il confine — non solo il lint:
 
 1. **Il caso base:** una PR che introduce un errore di lint riceve un commento inline sulla riga giusta e
-   l'errore compare nella tab Security.
+   l'errore compare nel check **Code scanning results** della PR. La vista Security conserva l'elenco
+   completo degli alert; il check e le annotazioni sulle righe modificate sono la verifica primaria qui.
 2. **Il diff:** una PR che *non* introduce errori ma tocca un file che ne ha già **non** riceve commenti
    per quelli. È il "reports only what your PR broke", ottenuto gratis.
-3. **Il confine:** in `checks`, stampa `${{ toJSON(github.token != '') }}` o prova a commentare la PR con
-   il token del job — **deve** fallire. `checks` non ha `pull-requests: write`, e va visto fallire una volta
-   per fidarsi che il confine esista.
+3. **Il confine:** in `checks`, prova a commentare la PR con il token del job — **deve** ricevere un errore
+   di autorizzazione. Il token esiste perché `checks` ha `contents: read`: verificarne la presenza non prova
+   il confine e non va usato come test. La prova significativa è che non abbia `pull-requests: write`.
 4. **Il trigger sbagliato:** lancia la stessa review con `workflow_dispatch` passando il numero di PR. Il
    commento e il SARIF devono comparire **sulla PR giusta**, non sul branch di default — è ciò che
    `resolve` esiste per garantire, e sbagliarlo significa pubblicare in silenzio nel posto sbagliato.
@@ -740,7 +743,7 @@ una riga di YAML invece di due container fatti a mano.
 .github/workflows/winnow.yml           # aggiornato: scheletro review sul gate esistente
 .github/actions/strip-agent-config/    # lo stripping, come action locale
 docs/security/threat-model.md          # scrivilo prima del codice
-test/fixtures/hostile/                 # il fixture che tenta il furto
+fixtures.md                            # registra il repository ostile esterno che tenta il furto
 ```
 
 **Ordine di lavoro.**
