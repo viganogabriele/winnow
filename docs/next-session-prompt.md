@@ -7,7 +7,9 @@ Copia il blocco qui sotto e incollalo come primo messaggio a un'AI in questo rep
 ```
 Lavoriamo su winnow. Leggi prima AGENTS.md, poi la Fase 1 di ROADMAP.md, poi queste
 decisioni: 0008 (perché il progetto è fatto così), 0011 (composite action), 0014
-(il workflow è riusabile dalla Fase 1) e 0023 (il write vive solo in publish).
+(il workflow è riusabile dalla Fase 1), 0023 (il write vive solo in publish, con
+l'emendamento del 2026-08-12: publish non fa checkout) e 0026 (il formatter SARIF
+lo installa winnow, non il repository analizzato).
 
 Contesto su di me: sto imparando a programmare. Non faccio merge di codice che non
 so spiegare a voce. Tu scrivi la maggior parte del codice, io prendo le decisioni,
@@ -45,8 +47,9 @@ Prima di scrivere qualunque cosa, voglio da te tre cose:
 
 3. Il passo 1 dell'ordine di lavoro della Fase 1 va fatto DA ME, a mano, prima del
    codice: eseguire ESLint in locale col formatter SARIF e guardare il file che
-   produce. Dimmi il comando esatto e cosa devo cercare quando apro quel file.
-   Non salterlo e non farlo tu al posto mio.
+   produce. Dimmi cosa devo cercare quando apro quel file — in particolare come
+   sono scritti i percorsi dei file, perché è un dettaglio che condiziona il
+   workflow (0026). Non salterlo e non farlo tu al posto mio.
 
 Regole che non si negoziano in questa fase (Appendice B della roadmap):
 - `pull_request`, mai `pull_request_target` con i secret disponibili
@@ -80,7 +83,11 @@ devo vedere. Non dichiarare la fase completa tu.
 
 - `gh auth login` fatto
 - Un repository GitHub tuo, pubblico, con un progetto Node/TypeScript e ESLint
-  configurato — è il fixture #1 di `fixtures.md`
+  configurato — è il fixture #1 di `fixtures.md`, già registrato
+- Il caller (`.github/workflows/qa.yml`) nel cavia lo committi **via git**, non con
+  `gh api`: un token GitHub può scrivere sotto `.github/workflows/` solo con lo scope
+  `workflow`, che il tuo non ha. Con il push via SSH non serve (usa la chiave, non il
+  token); se ti servisse: `gh auth refresh -h github.com -s workflow`
 - Il `claude setup-token` **non** serve ancora: arriva alla Fase 5
 
 ## Per le fasi successive

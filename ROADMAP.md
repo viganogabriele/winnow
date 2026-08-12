@@ -141,7 +141,7 @@ Ogni riga è uno strumento che esiste, che qualcun altro mantiene, e che facciam
 
 | Cosa | Strumento | Perché lui |
 |---|---|---|
-| Lint JS/TS | **ESLint** + `@microsoft/eslint-formatter-sarif` | Già nel repo analizzato; il formatter SARIF è ufficiale e costa zero. `checks` produce il file, `publish` lo passa a reviewdog con `-f=sarif` (`0023`). |
+| Lint JS/TS | **ESLint** + `@microsoft/eslint-formatter-sarif` | **ESLint è già nel repository analizzato; il formatter no — lo installa winnow** (`0026`), perché nessun repository è obbligato ad averlo. `checks` produce il file, `publish` lo passa a reviewdog con `-f=sarif` (`0023`). |
 | Analisi statica di sicurezza | **Semgrep** (`--sarif`) | Regole mantenute da altri, output SARIF nativo. |
 | Vulnerabilità nelle dipendenze | **osv-scanner** (Google) | Database OSV, SARIF nativo, nessun account. |
 | Segreti committati | **Gitleaks** | SARIF nativo, veloce. |
@@ -265,6 +265,11 @@ esistenti, non codice tuo.
 `actions/download-artifact`, `reviewdog/action-setup`, `github/codeql-action/upload-sarif`. Reviewdog
 accetta SARIF 2.1.0 con `-f=sarif`: non serve eseguire ESLint una seconda volta nel job che scrive.
 
+⚠️ **Il formatter non è una dipendenza del repository analizzato, e winnow non deve pretenderlo** (`0026`):
+nessuno dei cinque fixture lo ha. Aggiungerlo al proprio `package.json` è possibile — è il proprietario che
+decide il suo lockfile — ma pretenderlo significherebbe che ogni repository che non l'ha fatto fallisce.
+Quindi lo installa winnow in una cartella sua sul runner e lo passa a ESLint indicando il percorso del file.
+
 **File.**
 
 ```
@@ -315,18 +320,62 @@ crescono in modo additivo, ma non diventano mai una riga magica.
    ⚠️ **Invoca ESLint tu, non lo script `lint` del repository.** Sui cinque fixture registrati lo stesso
    lavoro ha quattro forme diverse: `eslint .`, `eslint . && prettier -c …`, `test:lint` invece di `lint`, e
    `biome check`. Eseguire `pnpm lint` significa a seconda dei casi raccogliere output di prettier, non
-   trovare lo script, o lintare con lo strumento sbagliato. winnow esegue
-   `eslint . -f @microsoft/eslint-formatter-sarif -o eslint.sarif`.
+   trovare lo script, o lintare con lo strumento sbagliato. winnow esegue **il binario ESLint del
+   repository** con **il formatter installato da lui** (`0026`) — due comandi, non uno:
+
+   ```bash
+   npm install --prefix "$RUNNER_TEMP/winnow-eslint-formatter" \
+     @microsoft/eslint-formatter-sarif@3.1.0
+   ./node_modules/.bin/eslint . \
+     -f "$RUNNER_TEMP/winnow-eslint-formatter/node_modules/@microsoft/eslint-formatter-sarif/sarif.js" \
+     -o eslint.sarif
+   ```
+
+   Due dettagli di quei comandi non sono stilistici. **`./node_modules/.bin/eslint`, non `npx eslint`:**
+   `npx` scarica un pacchetto se non lo trova installato, quindi una run su un repository senza ESLint
+   linterebbe con una versione che quel repository non ha mai dichiarato — l'opposto della promessa di
+   eseguire il suo binario. **E la versione del formatter è pinnata:** senza `@3.1.0`, una pubblicazione
+   altrui cambia il nostro output senza che noi tocchiamo niente.
+
+   ⚠️ **ESLint esce con codice 1 quando trova errori di lint, e il file lo scrive comunque.** Se lo step
+   non lo prevede, il job muore proprio nel caso base della verifica — una PR con un errore di lint — e
+   l'artefatto non viene mai caricato. Quindi: l'esito dello step non fa fallire il job, l'upload
+   dell'artefatto gira con `if: always()`, e i due codici di uscita si distinguono, perché significano
+   cose diverse: **1 = ESLint ha trovato problemi** (esito normale, il SARIF esiste), **2 = ESLint si è
+   rotto** (fallimento infrastrutturale, zero finding — Appendice B, regola 8).
 7. **Il job `publish`**, con `needs: [resolve, checks]` e condizione `same_repository`: scarica il SARIF,
    installa soltanto il binario reviewdog con
    `reviewdog/action-setup`, lo passa a `reviewdog -f=sarif -reporter=github-pr-review`, poi carica lo stesso
    file con `upload-sarif`. Non si affida al tipo di evento: passa a reviewdog `CI_PULL_REQUEST`,
    `CI_COMMIT`, owner e repository prodotti da `resolve`, e a `upload-sarif` passa esplicitamente
    `ref: refs/pull/<numero>/head` e `sha: <head SHA>`. Così anche `workflow_dispatch`, che altrimenti
-   descriverebbe il branch di default, pubblica sulla PR corretta. Fa checkout della head con
-   `persist-credentials: false` solo per dare a reviewdog il
-   contesto del diff; non esegue
-   `install`, script, hook o binari del repository.
+   descriverebbe il branch di default, pubblica sulla PR corretta.
+   **Non fa checkout del repository, ma il workspace ha bisogno di una radice git.** Il diff, reviewdog lo
+   prende dalla API di GitHub e non da un working tree; però quando pubblica chiama `GetGitRoot()`, che
+   risale le cartelle in cerca di `.git` e **restituisce errore se non lo trova** — gli serve per costruire i
+   percorsi dei permalink dentro il corpo dei commenti. Quindi in `publish` basta `git init` nel workspace
+   vuoto: reviewdog è soddisfatto e nel job che ha il permesso di scrittura non viene estratto nessun file
+   del repository e non ne gira nessuno (`0023`). `upload-sarif` invece non ha bisogno di git: quando gli
+   passi `ref` e `sha` li usa come sono e ignora il `git rev-parse` fallito.
+   ⚠️ **"Nessun file" sarebbe però impreciso, e vale sapere perché.** Se la API del diff risponde `406` —
+   succede sui diff molto grandi — reviewdog v0.21.0 ricade sul comando git, e quel fallback è *sempre*
+   attivo (`FallBackToGitCLI: true` è scritto nel suo `main.go`, non è un flag): esegue
+   `git fetch --depth=1 <url del repo base> <sha>` e poi `git diff`, quindi gli oggetti del commit finiscono
+   dentro `.git` e li legge. Restano **dati** letti da git: nessun file estratto nel workspace, nessuno
+   script, nessun hook, nessun binario del repository eseguito. Il confine dell'invariante 2 tiene — è la
+   frase "nemmeno un file" che sarebbe falsa, non la separazione.
+   ⚠️ **Pinna anche la versione del binario reviewdog** (`reviewdog_version: v0.21.0`): l'input di
+   `reviewdog/action-setup` vale `latest` per default, quindi pinnare l'action per SHA **non** pinna il
+   programma che poi gira accanto al token di scrittura. Le due cose si tengono: `git init` funziona perché
+   quella versione usa la radice git solo per i permalink, e la versione fissa è ciò che impedisce a quel
+   comportamento di cambiare sotto di noi. Se un giorno cambia, `publish` dà errore — non pubblica commenti
+   sbagliati.
+   ⚠️ **I percorsi dentro il SARIF però sono assoluti** (`file:///home/runner/work/<repo>/<repo>/src/a.ts`:
+   è così che li scrive il formatter). reviewdog li rende relativi alla **propria directory di lavoro** —
+   non esiste un flag per dirgliela — e `upload-sarif` fa la stessa cosa con `checkout_path`. Quindi
+   entrambi girano dalla radice del workspace, la stessa in cui ha girato ESLint. Se un giorno `checks`
+   lintasse in una sottocartella, i commenti finirebbero su percorsi sbagliati **senza dare errore**, che è
+   il modo peggiore in cui questa cosa può rompersi.
    Su un fork viene saltato per entrambi i trigger e il riepilogo di `checks` spiega che i risultati non
    possono essere pubblicati.
 8. `permissions:` esplicite e minime **per job**: `resolve` ha `pull-requests: read`, `checks` ha

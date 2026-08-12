@@ -20,6 +20,26 @@ portable `CI_PULL_REQUEST`, `CI_COMMIT`, `CI_REPO_OWNER` and `CI_REPO_NAME` vari
 The generic `reviewdog/action-setup` replaces `reviewdog/action-eslint`, because the latter deliberately
 combines execution and publication. Every action remains pinned by commit SHA.
 
+**Amendment (2026-08-12): `publish` does not check out the repository; it runs `git init` in the empty
+workspace.** An earlier draft of Fase 1 checked out the head "to give reviewdog the diff context". That
+reason is wrong — the `github-pr-review` reporter takes the diff from the GitHub API
+(`githubservice.PullRequestDiffService`) — but a first version of this amendment then concluded that no git
+directory was needed at all, which is also wrong: `service/github/github.go` calls
+`serviceutil.GetGitRoot()` while posting, and that walks up for a `.git` directory and **errors** if there
+is none. It uses the root only to build permalink paths in comment bodies, so a bare `git init` satisfies
+it, and the write-capable job then extracts no repository file into its workspace and runs none. Stated
+precisely, because "holds no repository file at all" would be false: when the diff API answers `406` — large
+diffs — reviewdog v0.21.0 always falls back to the git CLI (`FallBackToGitCLI: true` is hardcoded in its
+`main.go`), running `git fetch --depth=1 <base repo URL> <sha>` and `git diff`, so commit objects land in
+`.git` and are read. That is data read by git: no checked-out tree, no script, no hook, no repository binary
+executed. The invariant holds; the sweeping sentence did not.
+`upload-sarif` needs no git: given the `ref` and `sha` inputs it uses them and tolerates the failed
+`git rev-parse`. Two constraints come with this: reviewdog runs from the workspace root ESLint ran in,
+because the SARIF carries absolute paths (`0026`); and the reviewdog **binary** is pinned to a version
+(`reviewdog_version: v0.21.0`), since `action-setup` installs `latest` by default — pinning the action by
+SHA does not pin the program that runs beside the write token, and this amendment depends on that
+program's behaviour.
+
 **Reason:** the artifact is a data diode: untrusted execution can produce data for the writer, but it never
 receives the writer's token. Reusing the same canonical SARIF for reviewdog and code scanning also avoids a
 second formatter and two results that can disagree.

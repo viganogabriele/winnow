@@ -5,8 +5,8 @@ This file records the repositories used to verify winnow.
 Because the workflow runs on GitHub Actions, fixtures must be **real GitHub repositories with real pull
 requests** — not local folders. They live outside this repository and are never committed here.
 
-**To start Fase 1 you need exactly one of these, and only part of it:** fixture #1, with Node, pnpm and a
-working ESLint configuration. The web app and `compose.yml` are not needed until Fase 3, so the fixture can
+**To start Fase 1 you need exactly one of these, and only part of it:** fixture #1, with Node, a working
+ESLint configuration, and either package manager — the registered one uses **npm**. The web app and `compose.yml` are not needed until Fase 3, so the fixture can
 grow with the roadmap — but nothing in Fase 1 can be verified without it, because the workflow runs on
 GitHub and needs a real pull request on a real repository.
 
@@ -14,7 +14,7 @@ Per `ROADMAP.md` §3, five are needed:
 
 | # | What | Needed from |
 |---|---|---|
-| 1 | A repository of yours with Node + pnpm + ESLint. Add a web app and a `compose.yml` before Fase 3 | **Fase 1** |
+| 1 | A repository of yours with Node + ESLint, npm or pnpm. Add a web app and a `compose.yml` before Fase 3 | **Fase 1** |
 | 2 | A deliberately broken repository you write yourself: a 500 on a route, a type error, an overlap on mobile (the 500 is caught in Fase 3; the overlap needs Fase 6) | Fase 3 |
 | 3–4 | Two small open source repositories **not written by you** — they surface the cases you couldn't anticipate | Fase 3 |
 | 5 | A hostile fixture that *tries* to read and exfiltrate the token, and must visibly fail | Fase 4 |
@@ -47,6 +47,10 @@ the **fork gate** needs a pull request from a genuinely different account's fork
   different shapes: `eslint .` (#1), `eslint . && prettier -c …` (#3), `test:lint` rather than `lint` (#4),
   and `biome check` (#5). Running `pnpm lint` would variously pick up prettier output, fail to find the
   script, or lint with the wrong tool. winnow invokes ESLint itself with the SARIF formatter.
+- **No fixture has the SARIF formatter among its dependencies, and winnow must not require it.** An owner is
+  free to add `@microsoft/eslint-formatter-sarif` to their own `package.json`, but a repository that has not
+  must still work: so winnow installs it in a directory of its own on the runner and passes ESLint the path
+  to it — verified working with ESLint 9.39 (`0026`).
 - **Biome is an open question for Fase 2, not Fase 1.** To lint `PoliNetworkOrg/web` at all, Biome's output
   needs a route to SARIF: either a native reporter (check the current Biome docs — do not assume) or a
   converter of ours. Until then that repository contributes `tsc`, not lint.
