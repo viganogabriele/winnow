@@ -31,9 +31,10 @@ verification is "someone who is not you installs it and it works".
   branch, so the run does not implicitly know which pull request it concerns: the head SHA to analyse and
   the base SHA to read configuration from (`0009`, `0012`) are both derived from that number, inside the
   workflow.
-- **Inputs are a compatibility surface from Fase 1.** Renaming one breaks every caller, so all four are
-  declared from the start — PR number, profile, provider, model — even though the last two go unused until
-  Fase 7. Adding an input later is additive and harmless; rewriting every caller is not.
+- **Inputs are a compatibility surface from Fase 1.** Renaming one breaks every caller, so Fase 1 declares
+  only the input whose meaning is already fixed: the PR number. Profile, provider and model are added as
+  optional inputs in the phase that defines their semantics. Adding an optional input is additive; freezing
+  an undefined name, type or default now would make accidental behaviour part of the public contract.
 
 **Cost, stated honestly:** Fase 1 is no longer "one YAML file" — it is a called workflow plus a caller,
 which is more moving parts in the phase whose whole purpose is proving the loop end to end. Mitigation:
@@ -47,6 +48,9 @@ the default branch: during development the fixture's caller can point at a dedic
 (`uses: <owner>/winnow/.github/workflows/winnow.yml@<branch>`), and only the published form pins a SHA.
 
 **Date:** 2026-08-11
+
+**Amended:** 2026-08-12 — the original text predeclared four inputs while also observing that adding an
+input later is harmless. The contract now grows only when each input has defined semantics.
 
 **Re-evaluate when:** the input surface needs a breaking change and there are external adopters (then
 versioning by tag/SHA becomes a real policy question rather than a convention).

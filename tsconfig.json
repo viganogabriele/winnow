@@ -2,8 +2,8 @@
   // Type-checking only. winnow ships no compiled binary: the deliverables are a
   // GitHub Actions workflow, the composite actions it calls, and the dashboard.
   //
-  // NOTE: no TypeScript exists yet — the first files arrive in Fase 3 (the app.yml
-  // Zod schema and the SARIF converters). Until then `tsc --noEmit` reports TS18003
+  // NOTE: no TypeScript exists yet — the first files arrive in Fase 2 (the tsc-to-SARIF
+  // converter). Until then `tsc --noEmit` reports TS18003
   // ("no inputs found"), which is expected; there is deliberately no typecheck script.
   "compilerOptions": {
     "noEmit": true,
